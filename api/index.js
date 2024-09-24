@@ -65,7 +65,7 @@ async function genBitMap(url, width, inverted = false) {
   img.resize(width, Jimp.AUTO);
   img.greyscale();
   let brightness = [];
-  let charSet = inverted?  currCharSet.reverse() : currCharSet;
+  let charSet = inverted?  currCharSet.slice().reverse() : currCharSet;
 
   img.scan(0, 0, img.bitmap.width, img.bitmap.height, function(x, y, idx) {
     let red = this.bitmap.data[idx + 0];

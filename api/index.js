@@ -15,6 +15,7 @@
 
 'use strict';
 import cors from 'cors';
+import { sql } from '@vercel/postgres';
 const express = require('express');
 const multer = require('multer');
 const Jimp = require('jimp');
@@ -32,6 +33,8 @@ const CHARS_BIG = [" ", ".", "'", "`", "^", "\"", ",", ":", ";", "I", "l", "!", 
                   "O", "Z", "m", "w", "q", "p", "d", "b", "k", "h", "a", "o", "*", "#", "M", "W",
                   "&", "8", "%", "B", "@", "$"];
 
+
+
 // Default settings
 let currCharSet = CHARS_SMALL;
 /**
@@ -40,11 +43,13 @@ let currCharSet = CHARS_SMALL;
  */
 app.post("/ascii", async (req, res) => {
   const {url, width = 110, inverted = "false"} = req.body;
+  console.log('Ascii called with:', {url, width, inverted});
   res.type("text");
   if (url) {
     try {
       res.send(await genBitMap(url, width, inverted.toLowerCase() === "true"));
     } catch (err) {
+      console.error("ascii", err);
       res.status(500).send('Function Error');
     }
   } else {
@@ -84,6 +89,42 @@ async function genBitMap(url, width, inverted = false) {
   }
   return out;
 }
+
+
+app.post("/addScore", async (req, res) => {
+  try {
+    const {name , score} = req.body;
+    console.log('addScore called with:', {name, score});
+    res.type("text");
+    if (!name || !score) {
+      res.status(400).send('Name and score required');
+      return;
+    }
+    if (name.toLowerCase() === 'ass') {
+      res.status(400).send('Nice try.')
+      return;
+    }
+    await sql`INSERT INTO Snake (Name, Score) VALUES (${name}, ${score});`;
+    res.send("Success!");
+  } catch (error) {
+    console.error("addScore", error)
+    return response.status(500).send(error.message);
+  }
+
+});
+
+app.get("/getScores", async (req, res) => {
+  try {
+    console.log("getScores called");
+    const scores = await sql`SELECT * FROM Snake ORDER BY Score DESC;`;
+    console.log(scores);
+    res.json(scores)
+  } catch (e) {
+    console.error("getScores", e)
+    res.status(500).type("text").send(e.message);
+  }
+});
+
 
 const PORT = process.env.PORT || 3001;
 app.use(express.static('public'));
